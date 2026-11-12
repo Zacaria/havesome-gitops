@@ -14,7 +14,7 @@ Cette branche préserve la correction de navigation et des blocs de code en revu
 
 ## Publication
 
-Le projet Vercel `havesome-gitops` est séparé des autres sites. La publication actuelle est manuelle : construire puis déployer uniquement le contenu de `dist/` depuis un répertoire isolé lié à ce projet, puis comparer les fichiers publics au résultat construit. La branche Git n'est pas reliée à un déploiement automatique.
+Le projet Vercel `havesome-gitops` est séparé des autres sites. La version actuellement publiée est celle de `main` et a été déployée manuellement depuis ses fichiers statiques. Cette branche en revue construit un répertoire `dist/` mais n'a pas été publiée. Avant toute publication future, vérifier le contenu exact de `dist/` : la construction ne supprime pas les fichiers anciens. Aucun déploiement automatique Git n'est configuré.
 
 ## Navigation et exemples
 
