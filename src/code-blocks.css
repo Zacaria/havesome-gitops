@@ -1,0 +1,14 @@
+@layer theme, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+@source "./ui/*.tsx";
+
+.code [data-slot="code-block"]{border:0;border-radius:0;color:#e5efea}
+.code [data-slot="code-block-header"]{display:flex;align-items:center;padding:.65rem 1.2rem;color:#a8c4b5;border-bottom:1px solid #53676b}
+.code [data-slot="code-block-title"]{color:#a8c4b5;font-size:.7rem;letter-spacing:.12em}
+.code [data-slot="code-block-actions"]{margin-left:auto}
+.code [data-slot="code-block-copy-button"]{color:#e5efea;background:transparent;border:1px solid #a8c4b5;padding:.4rem;min-width:2.4rem;min-height:2.4rem}
+.code [data-slot="code-block-copy-button"]:hover{background:#35525d}
+.code [data-slot="code-block-content"]{padding:1.3rem;font-size:.83rem;line-height:1.7}
+.code [data-slot="code-block-content"]:focus-visible{outline:3px solid #e67939;outline-offset:-3px}
+.code [data-slot="code-block-code"] .code-token{color:#ffb18a}
