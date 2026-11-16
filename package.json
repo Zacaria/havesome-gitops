@@ -5,13 +5,14 @@
     "build": "vp build",
     "test:browser": "node tests/browser.mjs",
     "dev": "vp dev",
-    "check": "vp check --no-fmt src/code-blocks.tsx vite.config.ts"
+    "check": "vp check --no-fmt src/code-blocks.tsx src/workflow.tsx vite.config.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "lucide-react": "0.468.0",
+    "motion": "^14.14.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "tailwind-merge": "3.3.1"

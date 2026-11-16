@@ -52,6 +52,9 @@ try {
       assert.equal(await page.evaluate(() => navigator.clipboard.readText()), text, 'copy retains exact example');
       assert.equal(await block.locator('button').getAttribute('aria-label'), 'Copié');
     }
+    assert.equal(await page.locator('[data-workflow]').count(), 1, 'interactive workflow is visible');
+    assert.equal(await page.locator('[data-workflow] [data-node]').count(), 3, 'Git, controller and cluster are shown');
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'workflow fits viewport');
     assert.equal(await page.locator('.lab-actions [data-slot="button"]').count(), 3, 'lab controls use shadcn Button');
     for (const button of await page.locator('.lab-actions button').all()) {
       assert.ok((await button.boundingBox()).height >= 44, 'lab buttons remain touch friendly');
@@ -64,7 +67,24 @@ try {
     await page.locator('#drift').click();
     assert.equal(await page.locator('#actual').textContent(), '2', 'lab drift still works');
     await page.locator('#reconcile').click();
+    assert.equal(await page.locator('[data-workflow]').getAttribute('data-phase'), 'read', 'controller reads Git first');
+    const reducedPacket = page.locator('.workflow-packet');
+    const reducedTransform = await reducedPacket.evaluate(el => getComputedStyle(el).transform);
+    await page.waitForTimeout(250);
+    assert.equal(await reducedPacket.evaluate(el => getComputedStyle(el).transform), reducedTransform, 'reduced motion prevents packet travel');
+    assert.equal(await page.locator('#actual').textContent(), '2', 'cluster spec remains drifted while reading');
+    await page.waitForFunction(() => document.querySelector('[data-workflow]')?.getAttribute('data-phase') === 'compare');
+    assert.match(await page.locator('#status').textContent(), /Comparaison/);
+    await page.waitForFunction(() => document.querySelector('[data-workflow]')?.getAttribute('data-phase') === 'apply');
+    assert.equal(await page.locator('#actual').textContent(), '2', 'apply precedes observed change');
+    await page.waitForFunction(() => document.querySelector('[data-workflow]')?.getAttribute('data-phase') === 'done');
     assert.equal(await page.locator('#actual').textContent(), '3', 'lab reconciliation still works');
+    await page.locator('#drift').click();
+    await page.locator('#reconcile').click();
+    await page.locator('#reset').click();
+    await page.waitForTimeout(1200);
+    assert.equal(await page.locator('[data-workflow]').getAttribute('data-phase'), 'aligned', 'reset cancels pending steps');
+    assert.equal(await page.locator('#actual').textContent(), '3');
     await page.locator('.chapters a[href="#boucle"]').focus();
     await page.keyboard.press('Enter');
     await page.waitForTimeout(250);
@@ -105,7 +125,17 @@ try {
       await anchored.close();
     }
   }
-  console.log('browser navigation: PASS');
+  const animated = await browser.newPage({ viewport: { width: 1280, height: 800 }, reducedMotion: 'no-preference' });
+  await animated.goto(`http://127.0.0.1:${port}/#labo`);
+  await animated.locator('#drift').click();
+  await animated.locator('#reconcile').click();
+  const packet = animated.locator('.workflow-packet');
+  const first = await packet.evaluate(el => getComputedStyle(el).transform);
+  await animated.waitForTimeout(300);
+  const second = await packet.evaluate(el => getComputedStyle(el).transform);
+  assert.notEqual(first, second, 'Motion moves the packet when motion is allowed');
+  await animated.close();
+  console.log('browser navigation and workflow: PASS');
 } finally {
   await browser.close();
   server.kill();

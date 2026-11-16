@@ -32,7 +32,7 @@ Les exemples statiques utilisent le composant officiel shadcn/ui Code Block, ada
 
 ## Modèle du laboratoire
 
-La dérive simulée porte sur `spec.replicas` du Deployment dans le cluster, et non sur le nombre de pods prêts. Le contrôleur GitOps peut rétablir la configuration selon ses réglages ; Kubernetes essaie ensuite de créer les pods, sans garantie de disponibilité.
+Le laboratoire anime avec Motion les échanges entre Git, contrôleur et cluster. Simuler une dérive modifie localement la valeur observée de `spec.replicas` ; Réconcilier montre la lecture de Git, la comparaison, puis l’application au cluster. Recommencer interrompt la séquence et restaure l’état initial. La préférence de réduction des animations supprime les déplacements sans supprimer les étapes. Il s'agit d'une simulation locale, sans accès réseau ni modification d'un cluster. Les valeurs représentent `spec.replicas`, pas les pods prêts : Kubernetes essaie ensuite de créer les pods, sans garantie de disponibilité.
 
 ## Sources
 
