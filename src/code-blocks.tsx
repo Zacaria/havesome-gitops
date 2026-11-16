@@ -1,5 +1,20 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
+import './code-blocks.css';
+import { Button } from './ui/button';
+
+const actions = document.querySelector<HTMLElement>('.lab-actions');
+if (actions) {
+  const render = (value: number, message: string) => {
+    document.getElementById('actual')!.textContent = String(value);
+    document.getElementById('status')!.textContent = message;
+  };
+  createRoot(actions).render(<>
+    <Button id="drift" type="button" onClick={() => render(2, 'Dérive · 2 observés, 3 souhaités.')}>Simuler une dérive</Button>
+    <Button id="reconcile" type="button" onClick={() => render(3, 'Réconcilié · le modèle rejoint l’intention.')}>Réconcilier</Button>
+    <Button id="reset" type="button" onClick={() => render(3, 'Aligné · l’état observé correspond à l’intention.')}>Recommencer</Button>
+  </>);
+}
 
 import {
   CodeBlock,

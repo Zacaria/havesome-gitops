@@ -52,10 +52,18 @@ class SiteTest(unittest.TestCase):
         self.assertIn('https://opengitops.dev/', text)
 
     def test_built_reference_includes_illustration(self):
-        page = (ROOT / 'dist' / 'fiche.html').read_text()
-        self.assertIn('assets/gitops-visual.png', page)
-        self.assertTrue((ROOT / 'dist' / 'assets/gitops-visual.png').is_file())
-        self.assertTrue((ROOT / 'dist' / 'fiche.css').is_file())
+        class AssetParser(HTMLParser):
+            def __init__(self):
+                super().__init__(); self.assets = []
+            def handle_starttag(self, tag, attrs):
+                attrs = dict(attrs)
+                if tag == 'img': self.assets.append(attrs.get('src', ''))
+                if tag == 'link' and attrs.get('rel') == 'stylesheet': self.assets.append(attrs.get('href', ''))
+        page = AssetParser()
+        page.feed((ROOT / 'dist' / 'fiche.html').read_text())
+        image = next(path for path in page.assets if 'gitops-visual' in path)
+        self.assertEqual((ROOT / 'dist' / image.lstrip('/')).read_bytes(), (ROOT / 'assets' / 'gitops-visual.png').read_bytes())
+        self.assertTrue(any(path.endswith('.css') and (ROOT / 'dist' / path.lstrip('/')).is_file() for path in page.assets))
 
     def test_navigation_points_to_existing_sections(self):
         page = Page()

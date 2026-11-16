@@ -6,7 +6,11 @@ Direction : carnet d'exploitation clair, encre bleu nuit, repères orange et sch
 
 ## Vérification locale
 
-Depuis ce répertoire : `npm ci --workspaces=false`, `npm run build`, `python3 -m unittest discover -s tests -v`, puis `npm run test:browser` (Chromium disponible sur `/usr/bin/chromium`, ou chemin défini par `CHROMIUM`). Servir `dist/` avec `python3 -m http.server --directory dist 8000`. Les exemples sont pédagogiques et ne sont pas destinés à être appliqués à un cluster de production.
+Avec Node 24.11 ou supérieur et npm : `npm ci`, `npm run build`, `python3 -m unittest discover -s tests -v`, puis `npm run test:browser` (définir `CHROMIUM` sur le chemin de Brave pour le contrôle demandé). La toolchain Vite+ est locale au projet : `npm run dev` pour développer et `npm run check` pour les contrôles ciblés. Servir `dist/` avec `python3 -m http.server --directory dist 8000`. Les exemples sont pédagogiques et ne sont pas destinés à être appliqués à un cluster de production.
+
+## Contribuer
+
+Le guide et la fiche sont dans `index.html` et `fiche.html` ; les styles sont à leur racine et les composants shadcn sous `src/ui/`. Modifier le contenu ou le comportement, puis lancer les vérifications ci-dessus. Le build Vite+ reconstruit `dist/` et génère des noms d’assets avec empreinte ; ne pas modifier ces fichiers générés.
 
 ## État de cette branche
 
@@ -14,7 +18,7 @@ Cette branche préserve la correction de navigation et des blocs de code en revu
 
 ## Publication
 
-Le projet Vercel `havesome-gitops` est séparé des autres sites. La version actuellement publiée est celle de `main` et a été déployée manuellement. Construire le répertoire `dist/` depuis un arbre propre et vérifier son contenu exact avant publication : la construction ne supprime pas les fichiers anciens. Aucun déploiement automatique Git n'est configuré.
+Le projet Vercel `havesome-gitops` est séparé des autres sites. La version actuellement publiée est celle de `main` et a été déployée manuellement. Construire `dist/` depuis un arbre propre et vérifier le candidat avant publication. Aucun déploiement automatique Git n'est configuré ; la publication exige une revue et la coordination avec les autres candidats en cours.
 
 ## Fiche mémo
 

@@ -52,6 +52,15 @@ try {
       assert.equal(await page.evaluate(() => navigator.clipboard.readText()), text, 'copy retains exact example');
       assert.equal(await block.locator('button').getAttribute('aria-label'), 'Copié');
     }
+    assert.equal(await page.locator('.lab-actions [data-slot="button"]').count(), 3, 'lab controls use shadcn Button');
+    for (const button of await page.locator('.lab-actions button').all()) {
+      assert.ok((await button.boundingBox()).height >= 44, 'lab buttons remain touch friendly');
+    }
+    await page.locator('#drift').focus();
+    await page.keyboard.press('Enter');
+    assert.equal(await page.locator('#actual').textContent(), '2', 'keyboard starts drift');
+    await page.locator('#reset').click();
+    assert.equal(await page.locator('#actual').textContent(), '3', 'reset restores lab');
     await page.locator('#drift').click();
     assert.equal(await page.locator('#actual').textContent(), '2', 'lab drift still works');
     await page.locator('#reconcile').click();

@@ -2,8 +2,10 @@
   "name": "havesome-gitops",
   "private": true,
   "scripts": {
-    "build": "node build.mjs",
-    "test:browser": "node tests/browser.mjs"
+    "build": "vp build",
+    "test:browser": "node tests/browser.mjs",
+    "dev": "vp dev",
+    "check": "vp check --no-fmt src/code-blocks.tsx vite.config.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
@@ -16,8 +18,11 @@
   },
   "devDependencies": {
     "@playwright/test": "1.56.1",
-    "@tailwindcss/cli": "4.1.18",
-    "esbuild": "0.25.12",
-    "tailwindcss": "4.1.18"
+    "@tailwindcss/postcss": "^4.1.18",
+    "tailwindcss": "4.1.18",
+    "vite-plus": "1.6.0"
+  },
+  "overrides": {
+    "vite": "npm:@voidzero-dev/vite-plus-core@1.6.0"
   }
 }
