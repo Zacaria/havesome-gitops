@@ -51,6 +51,12 @@ class SiteTest(unittest.TestCase):
         self.assertIn('flux get kustomizations', text)
         self.assertIn('https://opengitops.dev/', text)
 
+    def test_built_reference_includes_illustration(self):
+        page = (ROOT / 'dist' / 'fiche.html').read_text()
+        self.assertIn('assets/gitops-visual.png', page)
+        self.assertTrue((ROOT / 'dist' / 'assets/gitops-visual.png').is_file())
+        self.assertTrue((ROOT / 'dist' / 'fiche.css').is_file())
+
     def test_navigation_points_to_existing_sections(self):
         page = Page()
         path = ROOT / 'index.html'
