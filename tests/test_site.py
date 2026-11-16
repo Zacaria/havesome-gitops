@@ -36,6 +36,21 @@ class SiteTest(unittest.TestCase):
                 self.assertTrue(image.get('alt'), f'{name} logo needs an accessible name')
                 self.assertTrue((ROOT / image['src']).is_file())
 
+    def test_reference_is_linked_at_both_ends_and_readable_without_js(self):
+        content = (ROOT / 'index.html').read_text()
+        header = content.split('</header>')[0]
+        footer = content.split('<footer>')[1]
+        for area in (header, footer):
+            self.assertIn('href="fiche.html"', area)
+            self.assertIn('href="https://github.com/Zacaria/havesome-gitops"', area)
+        reference = ROOT / 'fiche.html'
+        self.assertTrue(reference.exists(), 'la fiche doit être accessible')
+        text = reference.read_text()
+        self.assertIn('kubectl config current-context', text)
+        self.assertIn('argocd app get', text)
+        self.assertIn('flux get kustomizations', text)
+        self.assertIn('https://opengitops.dev/', text)
+
     def test_navigation_points_to_existing_sections(self):
         page = Page()
         path = ROOT / 'index.html'

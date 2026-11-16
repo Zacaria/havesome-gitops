@@ -10,7 +10,11 @@ Depuis ce répertoire : `python3 -m unittest discover -s tests -v`, puis `python
 
 ## Publication
 
-Le projet Vercel `havesome-gitops` est séparé des autres sites. La publication actuelle est manuelle : déployer uniquement `index.html`, `style.css`, `lab.js` et le répertoire `assets/` depuis un répertoire isolé lié à ce projet, puis comparer les fichiers publics au commit. Ce dépôt n'est pas relié à un déploiement automatique : un push ne met pas le site à jour. La branche `main` conserve la version publiée ; la branche `candidate/scroll-code` conserve séparément une correction locale en revue, non publiée.
+Le projet Vercel `havesome-gitops` est séparé des autres sites. La publication actuelle est manuelle : déployer uniquement `index.html`, `fiche.html`, `style.css`, `fiche.css`, `lab.js` et le répertoire `assets/` depuis un répertoire isolé lié à ce projet, puis comparer les fichiers publics au commit. Ce dépôt n'est pas relié à un déploiement automatique : un push ne met pas le site à jour. La branche `main` conserve la version publiée ; la branche `candidate/scroll-code` conserve séparément une correction locale en revue, non publiée.
+
+## Fiche mémo
+
+La page `fiche.html` résume la boucle GitOps et propose des commandes de consultation sélectionnables. Elles supposent les CLI installées, des droits de lecture et, pour les commandes de cluster, le bon contexte ; les noms et espaces de noms sont des exemples à adapter. La fiche ne remplace pas la documentation officielle.
 
 ## Modèle du laboratoire
 
