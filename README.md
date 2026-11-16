@@ -14,7 +14,9 @@ Le projet Vercel `havesome-gitops` est séparé des autres sites. La publication
 
 ## Modèle du laboratoire
 
-Le laboratoire utilise Motion pour montrer les étapes de lecture, comparaison et application ; Recommencer interrompt la séquence et la préférence de réduction des animations supprime les déplacements. La dérive simulée porte sur `spec.replicas` du Deployment dans le cluster, et non sur le nombre de pods prêts. Le contrôleur GitOps peut rétablir la configuration selon ses réglages ; Kubernetes essaie ensuite de créer les pods, sans garantie de disponibilité.
+Le laboratoire raconte une séquence locale : changement de 3 à 4 réplicas dans une nouvelle révision, validation simulée, convergence, dérive manuelle, correction automatique puis retour à la révision connue à 3. La validation et l'auto-réconciliation dépendent de la configuration réelle ; le retour arrière crée ici une nouvelle révision plutôt que de réécrire l'historique. Motion anime la scène ; Recommencer interrompt les étapes en cours et la préférence de réduction des animations supprime les déplacements. La simulation porte sur `spec.replicas` du Deployment, pas sur les pods prêts. Kubernetes essaie ensuite de créer les pods, sans garantie de disponibilité.
+
+Le concept original conservé dans `docs/gitops-cinematic-concept.png` a été généré avec l'outil natif Codex `image_gen.imagegen` et inspecté avant l'implémentation. Son langage de plans lumineux superposés à une architecture bâtie inspire la scène ; ce n'est pas une capture de l'interface.
 
 ## Sources
 

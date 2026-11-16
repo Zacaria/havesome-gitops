@@ -1,45 +1,53 @@
 import { animate } from 'motion';
 
-const workflow = document.querySelector('[data-workflow]');
-const actual = document.querySelector('#actual');
-const status = document.querySelector('#status');
-const reconcile = document.querySelector('#reconcile');
-const nodes = [...document.querySelectorAll('[data-node]')];
-const packets = [...document.querySelectorAll('.workflow-packet')];
+const scene = document.querySelector('[data-workflow]');
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-const messages = {
-  aligned: 'Aligné · la configuration observée correspond à Git.',
-  drift: 'Dérive · une modification manuelle a changé la configuration du cluster.',
-  read: 'Lecture · le contrôleur récupère les 3 réplicas déclarés dans Git.',
-  compare: 'Comparaison · le contrôleur constate 2 dans le cluster, contre 3 dans Git.',
-  apply: 'Application · le contrôleur demande le retour à 3 dans le Deployment.',
-  done: 'Réconcilié · spec.replicas est revenu à 3. Les pods ne sont pas nécessairement prêts.'
-};
-let timer, animations = [];
-function show(phase) {
-  clearTimeout(timer);
-  animations.forEach(animation => animation.stop()); animations = [];
-  workflow.dataset.phase = phase;
-  actual.textContent = ['drift','read','compare','apply'].includes(phase) ? '2' : '3';
-  status.textContent = messages[phase];
-  reconcile.disabled = phase !== 'drift';
-  const active = phase === 'read' ? 'git' : ['compare','apply'].includes(phase) ? 'controller' : ['drift','done'].includes(phase) ? 'cluster' : '';
-  nodes.forEach(node => {
-    node.classList.toggle('is-active', node.dataset.node === active);
-    if (!reduced.matches) animations.push(animate(node, {transform: node.dataset.node === active ? 'translateY(-4px)' : 'translateY(0px)'}, {duration:0.25}));
-    else node.style.transform = '';
-  });
-  packets.forEach((packet, i) => {
-    const visible = (phase === 'read' && i === 0) || (phase === 'apply' && i === 1);
-    packet.hidden = !visible;
-    packet.style.transform = '';
-    if (visible && !reduced.matches) animations.push(animate(packet, {transform:['translateX(-18px)','translateX(18px)'], opacity:[0,1,0]}, {duration:1, repeat:Infinity}));
-    else packet.style.opacity = '1';
-  });
-  const next = {read:'compare', compare:'apply', apply:'done'}[phase];
-  if (next) timer = setTimeout(() => show(next), 1100);
+const play = document.querySelector('#play');
+const reset = document.querySelector('#reset');
+const pause = document.querySelector('#pause');
+const phases = [
+  {id:'idle', chapter:'AVANT LE CHANGEMENT', text:'Le plan et le Deployment sont alignés à 3 réplicas.', desired:3, actual:3, revision:'r1', note:'état connu'},
+  {id:'change', chapter:'01 / CHANGEMENT VERSIONNÉ', text:'Une proposition prépare 4 réplicas. Git et le cluster sont encore à 3.', desired:3, proposal:4, actual:3, revision:'r1', note:'proposition r2'},
+  {id:'validation', chapter:'02 / VALIDATION', text:'La proposition est vérifiée et acceptée dans Git. Les contrôles précis dépendent du projet.', desired:4, actual:3, revision:'r2', note:'validée'},
+  {id:'converge', chapter:'03 / CONVERGENCE', text:'Le contrôleur lit la révision validée et met le Deployment à 4.', desired:4, actual:4, revision:'r2', note:'validée'},
+  {id:'drift', chapter:'04 / DÉRIVE', text:'Une modification manuelle ramène le Deployment à 2. Git demande toujours 4.', desired:4, actual:2, revision:'r2', note:'validée'},
+  {id:'repair', chapter:'05 / CORRECTION', text:'Dans ce scénario, la réconciliation automatique détecte l’écart et rétablit 4.', desired:4, actual:4, revision:'r2', note:'validée'},
+  {id:'rollback', chapter:'06 / RETOUR AU PLAN CONNU', text:'Un nouveau commit reprend le plan connu de r1 : Git demande à nouveau 3.', desired:3, actual:4, revision:'r3', note:'retour à r1'},
+  {id:'done', chapter:'07 / DE NOUVEAU ALIGNÉ', text:'Le contrôleur applique r3 : le Deployment revient à 3. Les pods ne sont pas nécessairement prêts.', desired:3, actual:3, revision:'r3', note:'retour à r1'}
+];
+let timer; let animations = []; let current = 0; let paused = false;
+function show(index) {
+  clearTimeout(timer); animations.forEach(a=>a.stop()); animations=[];
+  current = index;
+  if (index === 0 || index === phases.length-1) paused = false;
+  pause.disabled = index === 0 || index === phases.length-1;
+  pause.textContent = paused ? 'Reprendre' : 'Mettre en pause';
+  const p=phases[index]; scene.dataset.phase=p.id;
+  document.querySelector('#chapter').textContent=p.chapter;
+  document.querySelector('#status').textContent=p.text;
+  document.querySelector('#desired').textContent=p.desired;
+  document.querySelector('#actual').textContent=p.actual;
+  document.querySelector('#revision').textContent=p.revision;
+  document.querySelector('.plan-sheet > span').textContent=p.proposal ? 'PROPOSITION / GIT' : 'PLAN / GIT';
+  document.querySelector('[data-plan-number]').textContent=p.proposal ?? p.desired;
+  document.querySelector('[data-revision]').textContent=`${p.revision} · ${p.note}`;
+  document.querySelectorAll('.tower').forEach((tower,i)=>tower.classList.toggle('is-present',i<p.actual));
+  play.disabled=index>0 && index<phases.length-1;
+  play.firstChild.textContent=index===phases.length-1?'Rejouer le scénario ':'Jouer le scénario ';
+  if (!reduced.matches && index>0) {
+    const target = ['change','validation','rollback'].includes(p.id) ? '.plan-sheet' : '.city';
+    animations.push(animate(scene.querySelector(target), {transform:['translateY(12px)','translateY(0px)'], opacity:[0.55,1]}, {duration:0.8,easing:'ease-out'}));
+    if (['converge','repair','done'].includes(p.id)) animations.push(animate(scene.querySelector('.scanner'), {transform:['translateX(-30px)','translateX(30px)'],opacity:[0,1,0]}, {duration:1.4}));
+  }
+  if(index>0 && index<phases.length-1 && !paused) timer=setTimeout(()=>show(index+1),3500);
 }
-document.querySelector('#drift').addEventListener('click', () => show('drift'));
-reconcile.addEventListener('click', () => show('read'));
-document.querySelector('#reset').addEventListener('click', () => show('aligned'));
-reduced.addEventListener('change', () => show(workflow.dataset.phase));
+play.addEventListener('click',()=>show(1));
+pause.addEventListener('click',()=>{
+  paused = !paused;
+  clearTimeout(timer);
+  pause.textContent = paused ? 'Reprendre' : 'Mettre en pause';
+  if (!paused) timer=setTimeout(()=>show(current+1),3500);
+});
+reset.addEventListener('click',()=>show(0));
+reduced.addEventListener('change',()=>{animations.forEach(a=>a.stop()); animations=[];});
+show(0);
