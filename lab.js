@@ -16,8 +16,14 @@ const phases = [
   {id:'done', chapter:'07 / DE NOUVEAU ALIGNÉ', text:'Le contrôleur applique r3 : le Deployment revient à 3. Les pods ne sont pas nécessairement prêts.', desired:3, actual:3, revision:'r3', note:'retour à r1'}
 ];
 let timer; let animations = []; let current = 0; let paused = false;
+const animatedElements = [...scene.querySelectorAll('.plan-sheet, .city, .scanner')];
+const initialStyles = animatedElements.map(e => ({transform:e.style.transform, opacity:e.style.opacity}));
+function clearAnimations() {
+  animations.forEach(a=>a.cancel()); animations=[];
+  animatedElements.forEach((e,i)=>{ e.style.transform=initialStyles[i].transform; e.style.opacity=initialStyles[i].opacity; });
+}
 function show(index) {
-  clearTimeout(timer); animations.forEach(a=>a.stop()); animations=[];
+  clearTimeout(timer); clearAnimations();
   current = index;
   if (index === 0 || index === phases.length-1) paused = false;
   pause.disabled = index === 0 || index === phases.length-1;
@@ -46,8 +52,9 @@ pause.addEventListener('click',()=>{
   paused = !paused;
   clearTimeout(timer);
   pause.textContent = paused ? 'Reprendre' : 'Mettre en pause';
+  animations.forEach(a=>paused ? a.pause() : a.play());
   if (!paused) timer=setTimeout(()=>show(current+1),3500);
 });
 reset.addEventListener('click',()=>show(0));
-reduced.addEventListener('change',()=>{animations.forEach(a=>a.stop()); animations=[];});
+reduced.addEventListener('change',()=>{ if (reduced.matches) clearAnimations(); });
 show(0);

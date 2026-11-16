@@ -14,6 +14,21 @@ try {
     for (let i=0;i<30;i++) { try { await page.goto(`http://127.0.0.1:${port}/#labo`); break; } catch(e) { if(i===29) throw e; await page.waitForTimeout(100); } }
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'no horizontal overflow');
     await page.locator('#play').focus(); await page.keyboard.press('Enter');
+    if (reducedMotion === 'no-preference') {
+      await page.waitForTimeout(80);
+      await page.evaluate(() => document.querySelector('#pause').click());
+      const visual = () => page.locator('.plan-sheet').evaluate(e=>[getComputedStyle(e).transform,getComputedStyle(e).opacity]);
+      await page.waitForTimeout(80);
+      const atPause = await visual(); await page.waitForTimeout(400);
+      assert.deepEqual(await visual(), atPause, 'immediate pause freezes the active animation');
+      await page.evaluate(() => document.querySelector('#pause').click());
+      await page.waitForTimeout(200);
+      assert.notDeepEqual(await visual(), atPause, 'resume continues the active animation');
+      await page.evaluate(() => document.querySelector('#reset').click());
+      const inlineStyles = () => page.locator('.plan-sheet, .city, .scanner').evaluateAll(es=>es.map(e=>[e.style.transform,e.style.opacity]));
+      assert.deepEqual(await inlineStyles(), [['',''],['',''],['','']], 'reset restores scene styles');
+      await page.locator('#play').click();
+    }
     const scene = page.locator('[data-workflow]');
     assert.equal(await page.locator('#desired').textContent(), '3', 'proposal is not yet accepted');
     assert.equal(await page.locator('[data-plan-number]').textContent(), '4');
@@ -22,7 +37,12 @@ try {
     const second = await plan.evaluate(e=>getComputedStyle(e).transform);
     if (reducedMotion === 'reduce') assert.equal(first, second, 'reduced motion stays still');
     else assert.notEqual(first, second, 'Motion animates the plan');
-    await page.locator('#pause').click(); await page.waitForTimeout(3700);
+    await page.locator('#pause').click();
+    await page.waitForTimeout(80);
+    const frozen = await plan.evaluate(e=>[getComputedStyle(e).transform,getComputedStyle(e).opacity]);
+    await page.waitForTimeout(400);
+    assert.deepEqual(await plan.evaluate(e=>[getComputedStyle(e).transform,getComputedStyle(e).opacity]), frozen, 'pause freezes the active animation');
+    await page.waitForTimeout(3300);
     assert.equal(await scene.getAttribute('data-phase'), 'change', 'pause preserves phase');
     await page.locator('#pause').click();
     for (const phase of ['change','validation','converge','drift','repair','rollback','done']) {
@@ -37,6 +57,38 @@ try {
     if (reducedMotion === 'no-preference') await page.screenshot({path: process.env.TMPDIR + `/gitops-story-${width}.png`});
     await page.close();
   }
+  const interrupted = await browser.newPage({reducedMotion:'no-preference'});
+  await interrupted.goto(`http://127.0.0.1:${port}/#labo`);
+  const styles = () => interrupted.locator('.plan-sheet, .city, .scanner').evaluateAll(es=>es.map(e=>[e.style.transform,e.style.opacity]));
+  const clean = [['',''],['',''],['','']];
+  await interrupted.locator('#play').click(); await interrupted.waitForTimeout(80);
+  await interrupted.evaluate(()=>document.querySelector('#reset').click());
+  assert.deepEqual(await styles(), clean, 'immediate reset restores the plan');
+  await interrupted.locator('#play').click();
+  await interrupted.waitForFunction(()=>document.querySelector('[data-workflow]').dataset.phase==='converge');
+  await interrupted.waitForTimeout(80);
+  assert.ok(await interrupted.locator('.city, .scanner').evaluateAll(es=>es.some(e=>e.getAnimations().some(a=>a.playState==='running'))), 'city or scanner animates during convergence');
+  await interrupted.evaluate(()=>document.querySelector('#pause').click());
+  await interrupted.waitForTimeout(80);
+  const cityVisual = () => interrupted.locator('.city, .scanner').evaluateAll(es=>es.map(e=>[getComputedStyle(e).transform,getComputedStyle(e).opacity]));
+  const cityPaused = await cityVisual(); await interrupted.waitForTimeout(250);
+  assert.deepEqual(await cityVisual(), cityPaused, 'pause freezes city and scanner');
+  await interrupted.evaluate(()=>document.querySelector('#pause').click());
+  await interrupted.waitForTimeout(120);
+  assert.notDeepEqual(await cityVisual(), cityPaused, 'city and scanner resume');
+  await interrupted.emulateMedia({reducedMotion:'reduce'});
+  await interrupted.waitForTimeout(80);
+  assert.deepEqual(await styles(), clean, 'enabling reduced motion restores plan, city and scanner styles');
+  await interrupted.emulateMedia({reducedMotion:'no-preference'});
+  await interrupted.evaluate(()=>document.querySelector('#reset').click());
+  await interrupted.locator('#play').click();
+  await interrupted.waitForFunction(()=>document.querySelector('[data-workflow]').dataset.phase==='converge');
+  await interrupted.waitForTimeout(80);
+  await interrupted.evaluate(()=>document.querySelector('#reset').click());
+  assert.deepEqual(await styles(), clean, 'reset during convergence restores city and scanner');
+  await interrupted.waitForTimeout(1500);
+  assert.deepEqual(await styles(), clean, 'interrupted animations do not return');
+  await interrupted.close();
   const nojs = await browser.newPage({javaScriptEnabled:false}); await nojs.goto(`http://127.0.0.1:${port}/`);
   assert.match(await nojs.locator('noscript').textContent(), /Activez JavaScript/); await nojs.close();
   console.log('PASS desktop/mobile, keyboard, ordered scenario, interruption, reduced motion and no JS');
