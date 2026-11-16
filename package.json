@@ -1,0 +1,8 @@
+{
+  "name": "havesome-gitops",
+  "private": true,
+  "type": "module",
+  "scripts": {"build": "node scripts/build.mjs", "test:browser": "node tests/browser.mjs"},
+  "dependencies": {"motion": "14.14.0"},
+  "devDependencies": {"@playwright/test": "1.56.1", "esbuild": "0.25.12"}
+}
