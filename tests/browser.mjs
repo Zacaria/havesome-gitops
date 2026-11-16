@@ -84,6 +84,7 @@ try {
     for (const card of await page.locator('.commands article').all()) {
       const rect = await card.boundingBox();
       assert.ok(rect.x >= 0 && rect.x + rect.width <= viewport.width + 1, 'command card fits viewport');
+      assert.equal(await card.locator('pre').evaluate(el => el.scrollWidth <= el.clientWidth), true, 'command is fully visible');
     }
     await page.close();
     for (const id of ['modele', 'boucle', 'labo', 'depot', 'livrer', 'securite', 'outils', 'exploiter']) {
