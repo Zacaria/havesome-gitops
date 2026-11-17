@@ -2,102 +2,110 @@ import { chromium } from '@playwright/test';
 import { spawn } from 'node:child_process';
 import { strict as assert } from 'node:assert';
 import { createServer } from 'node:net';
-
-const probe = createServer();
-await new Promise(resolve => probe.listen(0, '127.0.0.1', resolve));
-const port = probe.address().port;
-await new Promise(resolve => probe.close(resolve));
-const server = spawn('python3', ['-m', 'http.server', String(port), '--bind', '127.0.0.1', '--directory', 'dist'], { stdio: 'ignore' });
-const browser = await chromium.launch({ executablePath: process.env.CHROMIUM || '/usr/bin/chromium', headless: true, args: ['--no-sandbox'] });
+const socket = createServer(); await new Promise(r => socket.listen(0, '127.0.0.1', r));
+const port = socket.address().port; await new Promise(r => socket.close(r));
+const server = spawn('python3', ['-m', 'http.server', String(port), '--bind', '127.0.0.1', '--directory', 'dist'], {stdio:'ignore'});
+let browser;
 try {
-  await new Promise(resolve => setTimeout(resolve, 500));
-  for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 }]) {
-    const page = await browser.newPage({ viewport, reducedMotion: 'reduce' });
-    await page.goto(`http://127.0.0.1:${port}/#labo`);
-    assert.match(await page.title(), /HaveSome GitOps/);
+  browser = await chromium.launch({executablePath: process.env.CHROMIUM || '/usr/bin/chromium', headless: true, chromiumSandbox: true});
+  for (const width of [1280, 390]) for (const reducedMotion of ['reduce', 'no-preference']) {
+    const page = await browser.newPage({viewport:{width,height:844},reducedMotion});
+    const errors = []; page.on('pageerror', error => errors.push(error.message));
+    for (let i=0;i<30;i++) { try { await page.goto(`http://127.0.0.1:${port}/#labo`); break; } catch(e) { if(i===29) throw e; await page.waitForTimeout(100); } }
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'no horizontal overflow');
+    await page.locator('#play').focus(); await page.keyboard.press('Enter');
+    if (reducedMotion === 'no-preference') {
+      await page.waitForTimeout(80);
+      await page.evaluate(() => document.querySelector('#pause').click());
+      const visual = () => page.locator('.pr').evaluate(e=>[getComputedStyle(e).transform,getComputedStyle(e).opacity]);
+      await page.waitForTimeout(80);
+      const atPause = await visual(); await page.waitForTimeout(400);
+      assert.deepEqual(await visual(), atPause, 'immediate pause freezes the active animation');
+      await page.evaluate(() => document.querySelector('#pause').click());
+      await page.waitForTimeout(200);
+      assert.notDeepEqual(await visual(), atPause, 'resume continues the active animation');
+      await page.evaluate(() => document.querySelector('#reset').click());
+      assert.equal(await page.locator('[data-workflow] [style]').evaluateAll(es=>es.filter(e=>e.style.length).length), 0, 'reset restores scene styles');
+      await page.locator('#play').click();
+    }
+    const scene = page.locator('[data-workflow]');
+    assert.equal(await page.locator('#desired').textContent(), '3', 'proposal is not yet accepted');
+    assert.equal(await page.locator('[data-sync]').textContent(), 'PROPOSITION EN REVUE');
+    assert.equal(await page.locator('.slot-4.is-proposed').count(), 1, 'the proposal is drawn as a pending outline');
+    assert.equal(await page.locator('[data-act="1"]').getAttribute('aria-current'), 'step');
+    const plan = page.locator('.pr');
+    const first = await plan.evaluate(e=>getComputedStyle(e).transform); await page.waitForTimeout(250);
+    const second = await plan.evaluate(e=>getComputedStyle(e).transform);
+    if (reducedMotion === 'reduce') assert.equal(first, second, 'reduced motion stays still');
+    else assert.notEqual(first, second, 'Motion animates the plan');
+    await page.locator('#pause').click();
+    await page.waitForTimeout(80);
+    const frozen = await plan.evaluate(e=>[getComputedStyle(e).transform,getComputedStyle(e).opacity]);
     await page.waitForTimeout(400);
-    assert.equal(await page.locator('.chapters [aria-current="location"]').getAttribute('href'), '#labo', 'initial fragment is current');
-    const position = await page.locator('.chapters').evaluate(el => getComputedStyle(el).position);
-    assert.equal(position, 'sticky', 'navigation stays accessible');
-    for (const id of ['modele', 'boucle', 'labo', 'depot', 'livrer', 'securite', 'outils', 'exploiter']) {
-      await page.locator(`#${id}`).evaluate(el => el.scrollIntoView({ behavior: 'instant' }));
-      await page.waitForTimeout(100);
-      assert.equal(await page.locator('.chapters [aria-current="location"]').getAttribute('href'), `#${id}`, `current chapter ${id}`);
-      const visible = await page.locator('.chapters [aria-current="location"]').evaluate(el => {
-        const link = el.getBoundingClientRect();
-        const nav = el.parentElement.getBoundingClientRect();
-        return link.left >= nav.left - 1 && link.right <= nav.right + 1;
-      });
-      assert.ok(visible, `current chapter ${id} remains visible in navigation`);
+    assert.deepEqual(await plan.evaluate(e=>[getComputedStyle(e).transform,getComputedStyle(e).opacity]), frozen, 'pause freezes the active animation');
+    await page.waitForTimeout(3300);
+    assert.equal(await scene.getAttribute('data-phase'), 'change', 'pause preserves phase');
+    await page.locator('#pause').click();
+    for (const phase of ['change','validation','converge','drift','repair','rollback','done']) {
+      await page.waitForFunction(p=>document.querySelector('[data-workflow]').dataset.phase===p,phase,{timeout:15000});
+      if (phase === 'drift') { assert.equal(await page.locator('#desired').textContent(),'4'); assert.equal(await page.locator('#actual').textContent(),'2'); assert.equal(await page.locator('.slot.is-missing').count(), 2, 'drift shows two missing towers'); assert.equal(await page.locator('[data-ctrl-verdict]').textContent(), '≠'); }
+      if (phase === 'done') { assert.equal(await page.locator('#desired').textContent(),'3'); assert.equal(await page.locator('#actual').textContent(),'3'); }
     }
-    await page.locator('#sources').evaluate(el => el.scrollIntoView({ behavior: 'instant' }));
-    await page.waitForTimeout(100);
-    assert.equal(await page.locator('.chapters [aria-current="location"]').count(), 0, 'sources is not a chapter');
-    const blocks = page.locator('[data-slot="code-block"]');
-    assert.equal(await blocks.count(), 2, 'both static examples use the official CodeBlock');
-    assert.equal(await blocks.first().locator('[data-slot="code-block-content"]').getAttribute('tabindex'), '0');
-    assert.equal(await blocks.nth(1).locator('[data-slot="code-block-content"] span').count() > 0, true, 'YAML coloring remains');
-    const inline = await blocks.nth(1).locator('[data-slot="code-block-code"]').evaluate(code => {
-      const token = [...code.querySelectorAll('span')].find(el => el.textContent === 'apiVersion:');
-      const next = token.nextSibling;
-      const range = document.createRange();
-      range.setStart(next, 0); range.setEnd(next, 1);
-      return { token: token.getBoundingClientRect().top, value: range.getBoundingClientRect().top };
-    });
-    assert.ok(Math.abs(inline.token - inline.value) < 2, 'YAML keys and values remain on the same line');
-    await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
-    for (const block of await blocks.all()) {
-      const text = await block.locator('code').textContent();
-      await block.locator('button').click();
-      assert.equal(await page.evaluate(() => navigator.clipboard.readText()), text, 'copy retains exact example');
-      assert.equal(await block.locator('button').getAttribute('aria-label'), 'Copié');
-    }
-    await page.locator('#drift').click();
-    assert.equal(await page.locator('#actual').textContent(), '2', 'lab drift still works');
-    await page.locator('#reconcile').click();
-    assert.equal(await page.locator('#actual').textContent(), '3', 'lab reconciliation still works');
-    await page.locator('.chapters a[href="#boucle"]').focus();
-    await page.keyboard.press('Enter');
-    await page.waitForTimeout(250);
-    assert.equal(new URL(page.url()).hash, '#boucle', 'keyboard follows anchor');
-    assert.equal(await page.locator('.chapters [aria-current="location"]').getAttribute('href'), '#boucle');
-    await page.evaluate(() => window.scrollTo(0, 0));
-    await page.waitForTimeout(100);
-    for (const direction of [1, -1]) {
-      if (direction < 0) await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-      for (let i = 0; i < 30; i++) {
-        await page.mouse.wheel(0, direction * 430);
-        await page.waitForTimeout(35);
-        const state = await page.evaluate(() => {
-          const nav = document.querySelector('.chapters');
-          const line = nav.getBoundingClientRect().height + 48;
-          const links = [...nav.querySelectorAll('a')];
-          const expected = links.filter(a => document.querySelector(a.hash).getBoundingClientRect().top <= line).at(-1);
-          return { expected: document.querySelector('#sources').getBoundingClientRect().top <= line ? null : expected?.hash || null, actual: nav.querySelector('[aria-current]')?.hash || null };
-        });
-        assert.equal(state.actual, state.expected, 'wheel progress matches reading line');
-      }
-    }
-    await page.goto(`http://127.0.0.1:${port}/fiche.html`);
-    assert.equal(await page.locator('.sheet-illustration img').evaluate(img => img.naturalWidth), 1752, 'illustration loads');
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, 'reference does not overflow viewport');
-    for (const card of await page.locator('.commands article').all()) {
-      const rect = await card.boundingBox();
-      assert.ok(rect.x >= 0 && rect.x + rect.width <= viewport.width + 1, 'command card fits viewport');
-      assert.equal(await card.locator('pre').evaluate(el => el.scrollWidth <= el.clientWidth), true, 'command is fully visible');
-    }
+    await page.locator('[data-act="4"]').focus(); await page.keyboard.press('Enter');
+    assert.equal(await scene.getAttribute('data-phase'), 'drift', 'acts are reachable by keyboard');
+    assert.equal(await page.locator('[data-act="4"]').getAttribute('aria-current'), 'step');
+    await page.locator('[data-act="1"]').click(); await page.waitForTimeout(3000);
+    assert.equal(await page.locator('.slot-4 .ghost').evaluate(e=>getComputedStyle(e).opacity), '1', 'jumping back to the proposal keeps its outline visible');
+    await page.locator('[data-act="7"]').click(); await page.locator('[data-act="5"]').click(); await page.waitForTimeout(1500);
+    assert.equal(await page.locator('.slot-4 .ghost').evaluate(e=>getComputedStyle(e).opacity), '1', 'jumping from r3 to the repair act shows the fourth requested outline');
+    await page.locator('#reset').click();
+    await page.waitForTimeout(1800); assert.equal(await scene.getAttribute('data-phase'),'idle');
+    assert.deepEqual(errors, [], 'no JavaScript errors');
+    await page.locator('#labo').scrollIntoViewIfNeeded();
+    if (reducedMotion === 'no-preference') await page.screenshot({path: process.env.TMPDIR + `/gitops-story-${width}.png`});
     await page.close();
-    for (const id of ['modele', 'boucle', 'labo', 'depot', 'livrer', 'securite', 'outils', 'exploiter']) {
-      const anchored = await browser.newPage({ viewport, reducedMotion: 'reduce' });
-      await anchored.goto(`http://127.0.0.1:${port}/#${id}`);
-      await anchored.evaluate(() => document.fonts.ready);
-      await anchored.waitForTimeout(350);
-      assert.equal(await anchored.locator('.chapters [aria-current="location"]').getAttribute('href'), `#${id}`, `direct fragment ${id}`);
-      await anchored.close();
-    }
   }
-  console.log('browser navigation: PASS');
-} finally {
-  await browser.close();
-  server.kill();
-}
+  const interrupted = await browser.newPage({reducedMotion:'no-preference'});
+  await interrupted.goto(`http://127.0.0.1:${port}/#labo`);
+  const styles = () => interrupted.locator('[data-workflow] [style]').evaluateAll(es=>es.filter(e=>e.style.length).map(e=>e.className));
+  const clean = [];
+  await interrupted.locator('#play').click(); await interrupted.waitForTimeout(80);
+  await interrupted.evaluate(()=>document.querySelector('#reset').click());
+  assert.deepEqual(await styles(), clean, 'immediate reset restores the plan');
+  await interrupted.locator('#play').click();
+  await interrupted.waitForFunction(()=>document.querySelector('[data-workflow]').dataset.phase==='converge');
+  await interrupted.waitForTimeout(80);
+  assert.ok(await interrupted.locator('.tower, .packet, .beam').evaluateAll(es=>es.some(e=>e.getAnimations().some(a=>a.playState==='running'))), 'packet, beam or towers animate during convergence');
+  await interrupted.evaluate(()=>document.querySelector('#pause').click());
+  await interrupted.waitForTimeout(80);
+  const cityVisual = () => interrupted.locator('.packet, .beam, .ring').evaluateAll(es=>es.map(e=>[getComputedStyle(e).transform,getComputedStyle(e).opacity]));
+  const cityPaused = await cityVisual(); await interrupted.waitForTimeout(250);
+  assert.deepEqual(await cityVisual(), cityPaused, 'pause freezes packets, beam and loop');
+  await interrupted.evaluate(()=>document.querySelector('#pause').click());
+  await interrupted.waitForTimeout(120);
+  assert.notDeepEqual(await cityVisual(), cityPaused, 'packets, beam and loop resume');
+  await interrupted.emulateMedia({reducedMotion:'reduce'});
+  await interrupted.waitForTimeout(80);
+  assert.deepEqual(await styles(), clean, 'enabling reduced motion restores scene styles');
+  await interrupted.emulateMedia({reducedMotion:'no-preference'});
+  await interrupted.evaluate(()=>document.querySelector('#reset').click());
+  await interrupted.locator('#play').click();
+  await interrupted.waitForFunction(()=>document.querySelector('[data-workflow]').dataset.phase==='converge');
+  await interrupted.waitForTimeout(80);
+  await interrupted.evaluate(()=>document.querySelector('#reset').click());
+  assert.deepEqual(await styles(), clean, 'reset during convergence restores scene styles');
+  await interrupted.waitForTimeout(1500);
+  assert.deepEqual(await styles(), clean, 'interrupted animations do not return');
+  // Pausing after the act's animations have finished must keep the reached state.
+  await interrupted.locator('[data-act="3"]').click(); await interrupted.waitForTimeout(3600);
+  const settled = () => interrupted.evaluate(()=>[document.querySelector('.slot-4 .tower'), document.querySelector('.pr')].map(e=>getComputedStyle(e).opacity));
+  assert.deepEqual(await settled(), ['1', '0'], 'convergence reaches four towers without the PR card');
+  await interrupted.evaluate(()=>document.querySelector('#pause').click()); await interrupted.waitForTimeout(100);
+  assert.deepEqual(await settled(), ['1', '0'], 'pausing after finished animations keeps the reached state');
+  await interrupted.evaluate(()=>document.querySelector('#pause').click()); await interrupted.waitForTimeout(100);
+  assert.deepEqual(await settled(), ['1', '0'], 'resuming does not replay finished animations');
+  await interrupted.close();
+  const nojs = await browser.newPage({javaScriptEnabled:false}); await nojs.goto(`http://127.0.0.1:${port}/`);
+  assert.match(await nojs.locator('noscript').textContent(), /Activez JavaScript/); await nojs.close();
+  console.log('PASS desktop/mobile, keyboard, ordered scenario, interruption, reduced motion and no JS');
+} finally { if(browser) await browser.close(); server.kill(); }

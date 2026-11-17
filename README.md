@@ -6,19 +6,15 @@ Direction : carnet d'exploitation clair, encre bleu nuit, repères orange et sch
 
 ## Vérification locale
 
-Depuis ce répertoire : `npm ci --workspaces=false`, `npm run build`, `python3 -m unittest discover -s tests -v`, puis `npm run test:browser` (Chromium disponible sur `/usr/bin/chromium`, ou chemin défini par `CHROMIUM`). Servir `dist/` avec `python3 -m http.server --directory dist 8000`. Les exemples sont pédagogiques et ne sont pas destinés à être appliqués à un cluster de production.
-
-## État de cette branche
-
-Cette branche préserve la correction de navigation et des blocs de code en revue ; elle n’est pas publiée. `main` correspond à la version actuellement servie. Un push sur ce dépôt ne déploie pas le site.
+Depuis ce répertoire : `npm ci`, `npm run build`, `python3 -m unittest discover -s tests -v`, `CHROMIUM=/usr/bin/brave-browser npm run test:browser`, puis `python3 -m http.server --directory dist 8000`. Ouvrir `http://localhost:8000/`. Les exemples sont pédagogiques et ne sont pas destinés à être appliqués à un cluster de production.
 
 ## Publication
 
-Le projet Vercel `havesome-gitops` est séparé des autres sites. La version actuellement publiée est celle de `main` et a été déployée manuellement. Construire le répertoire `dist/` depuis un arbre propre et vérifier son contenu exact avant publication : la construction ne supprime pas les fichiers anciens. Aucun déploiement automatique Git n'est configuré.
+Le projet Vercel `havesome-gitops` est séparé des autres sites. La publication actuelle est manuelle : déployer uniquement le contenu construit de `dist/` depuis un répertoire isolé lié à ce projet, puis comparer les fichiers publics au commit. Ce dépôt n'est pas relié à un déploiement automatique : un push ne met pas le site à jour. Vérifier la version effectivement servie avant chaque publication pour préserver les changements concurrents.
 
 ## Fiche mémo
 
-La page `fiche.html` résume la boucle GitOps et propose des commandes de consultation sélectionnables. Elles supposent les CLI installées, des droits de lecture et, pour les commandes de cluster, le bon contexte ; les noms et espaces de noms sont des exemples à adapter. La fiche ne remplace pas la documentation officielle. Son illustration est une métaphore, pas un schéma technique normatif ; elle a été produite par l'outil natif Codex `image_gen.imagegen` (1752 × 897 px).
+La page `fiche.html` présente les principes et des commandes de consultation sélectionnables. Elles demandent les CLI, des droits de lecture et le bon contexte ; adaptez les noms d'exemple. L'illustration est une métaphore produite avec l'outil natif Codex `image_gen.imagegen`, et non un schéma technique normatif.
 
 ## Navigation et exemples
 
@@ -28,7 +24,9 @@ Les exemples statiques utilisent le composant officiel shadcn/ui Code Block, ada
 
 ## Modèle du laboratoire
 
-La dérive simulée porte sur `spec.replicas` du Deployment dans le cluster, et non sur le nombre de pods prêts. Le contrôleur GitOps peut rétablir la configuration selon ses réglages ; Kubernetes essaie ensuite de créer les pods, sans garantie de disponibilité.
+Le laboratoire raconte une séquence locale : changement de 3 à 4 réplicas dans une nouvelle révision, validation simulée, convergence, dérive manuelle, correction automatique puis retour à la révision connue à 3. La validation et l'auto-réconciliation dépendent de la configuration réelle ; le retour arrière crée ici une nouvelle révision plutôt que de réécrire l'historique. La scène place côte à côte les trois acteurs : le registre Git (PR, contrôles, commits r1 à r3), la boucle du contrôleur qui compare les deux valeurs, et le cluster où les tours en pierre représentent la valeur déclarée et les contours en pointillés la valeur demandée par Git. Chaque acte, accessible directement depuis la frise, ajoute une phrase « Pourquoi c'est utile ». Motion anime la scène (diff, contrôles, tampon de fusion, paquets de révision, balayage de réconciliation, tours qui se construisent ou tombent) ; la pause fige les animations et leur reprise continue le mouvement. Recommencer restaure la scène initiale, et activer la réduction des animations interrompt les mouvements en cours sans laisser de styles intermédiaires. La simulation porte sur `spec.replicas` du Deployment, pas sur les pods prêts. Kubernetes essaie ensuite de créer les pods, sans garantie de disponibilité.
+
+Le concept original conservé dans `docs/gitops-cinematic-concept.png` a été généré avec l'outil natif Codex `image_gen.imagegen` et inspecté avant l'implémentation. Son langage de plans lumineux superposés à une architecture bâtie inspire la scène ; ce n'est pas une capture de l'interface.
 
 ## Sources
 
