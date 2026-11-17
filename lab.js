@@ -95,7 +95,7 @@ function choreograph(previous, p) {
     run(core, {transform:['scale(1)', 'scale(1.1)', 'scale(1)', 'scale(1.1)', 'scale(1)']}, {duration:1.2, delay:2.5});
   }
   if (p.id === 'rollback') {
-    if (previous.id === 'repair') run($('.terminal'), {opacity:[1, 0]}, {duration:.4});
+    if (previous.id === 'repair') run($('.terminal'), {opacity:[.55, 0]}, {duration:.4});
     run($('.commit-r3'), {transform:['translateY(-26px)', 'translateY(0px)'], opacity:[0, 1]}, {duration:.6, delay:.2});
     travel($('.commit-r3'), core, .7);
   }
@@ -180,7 +180,8 @@ pause.addEventListener('click', () => {
   paused = !paused;
   pause.textContent = paused ? 'Reprendre' : 'Mettre en pause';
   scene.classList.toggle('is-paused', paused);
-  animations.forEach(a => paused ? a.pause() : a.play());
+  // Finished animations have already committed their last frame; pausing them would rewind it.
+  animations.filter(a => a.state !== 'finished').forEach(a => paused ? a.pause() : a.play());
   if (paused) { clearTimeout(timer); remaining = Math.max(0, deadline - performance.now()); }
   else schedule(remaining);
 });

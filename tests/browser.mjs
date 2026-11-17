@@ -96,6 +96,14 @@ try {
   assert.deepEqual(await styles(), clean, 'reset during convergence restores scene styles');
   await interrupted.waitForTimeout(1500);
   assert.deepEqual(await styles(), clean, 'interrupted animations do not return');
+  // Pausing after the act's animations have finished must keep the reached state.
+  await interrupted.locator('[data-act="3"]').click(); await interrupted.waitForTimeout(3600);
+  const settled = () => interrupted.evaluate(()=>[document.querySelector('.slot-4 .tower'), document.querySelector('.pr')].map(e=>getComputedStyle(e).opacity));
+  assert.deepEqual(await settled(), ['1', '0'], 'convergence reaches four towers without the PR card');
+  await interrupted.evaluate(()=>document.querySelector('#pause').click()); await interrupted.waitForTimeout(100);
+  assert.deepEqual(await settled(), ['1', '0'], 'pausing after finished animations keeps the reached state');
+  await interrupted.evaluate(()=>document.querySelector('#pause').click()); await interrupted.waitForTimeout(100);
+  assert.deepEqual(await settled(), ['1', '0'], 'resuming does not replay finished animations');
   await interrupted.close();
   const nojs = await browser.newPage({javaScriptEnabled:false}); await nojs.goto(`http://127.0.0.1:${port}/`);
   assert.match(await nojs.locator('noscript').textContent(), /Activez JavaScript/); await nojs.close();
