@@ -26,6 +26,9 @@
 .h1{height:38%;background:#a9b9ad;opacity:.55;clip-path:polygon(0 60%,14% 30%,30% 52%,46% 18%,62% 46%,78% 22%,100% 48%,100% 100%,0 100%)}
 .h2{height:24%;background:#7f9b94;opacity:.5;clip-path:polygon(0 50%,22% 20%,40% 44%,58% 12%,80% 40%,100% 18%,100% 100%,0 100%)}
 .zone{position:relative;z-index:2;min-width:0;display:flex;flex-direction:column}
+/* The PR card overlays the ledger: reserve its height so it never spills into the next zone. */
+.zone-git{min-height:16rem}
+@media(max-width:360px){.zone-git{min-height:17.5rem}}
 .zone-label{margin:0 0 .8rem;font-size:.72rem;font-weight:700;letter-spacing:.08em;color:#2a3a45;white-space:nowrap;text-transform:uppercase}.zone-label b{display:inline-block;background:var(--navy);color:var(--cream);padding:.15rem .4rem;margin-right:.35rem;letter-spacing:.12em}
 .ledger{display:flex;flex-direction:column-reverse;justify-content:flex-end;gap:.45rem;flex:1}
 .commit{position:relative;background:var(--navy);color:var(--cream);padding:.55rem .7rem .55rem 2.6rem;border-left:4px solid #6f8fcb;box-shadow:5px 6px 0 #14283f30;opacity:0;display:none}
@@ -40,7 +43,7 @@
 .checks li{display:flex;align-items:center;gap:.3rem}.checks li:before{content:'';width:.85rem;height:.85rem;border:1.5px solid #6a7a80;border-radius:2px}
 .checks li{position:relative}.checks i{position:absolute;left:0;top:50%;margin-top:-.43rem;width:.85rem;height:.85rem;background:#2f7a4a;border-radius:2px;transform:scale(0)}.checks i:after{content:'✓';position:absolute;inset:0;color:#fff;font:700 .7rem/0.85rem sans-serif;text-align:center;font-style:normal}
 .story[data-phase=validation] .checks i{transform:none}
-.merged{position:absolute;right:.6rem;top:.55rem;background:var(--cream);border:2px solid #7a3fb0;color:#7a3fb0;font-weight:700;font-size:.7rem;letter-spacing:.12em;padding:.15rem .4rem;transform:rotate(-8deg);opacity:0}
+.merged{position:relative;display:table;margin:.55rem 0 0 auto;background:var(--cream);border:2px solid #7a3fb0;color:#7a3fb0;font-weight:700;font-size:.7rem;letter-spacing:.12em;padding:.15rem .4rem;transform:rotate(-8deg);opacity:0}
 .story[data-phase=validation] .merged{opacity:1}
 .zone-ctrl{align-items:center;text-align:center}
 .loop{position:relative;flex:1;width:100%;min-height:200px}
@@ -57,7 +60,7 @@
 .ghost,.tower{position:absolute;left:0;right:0;bottom:0;height:78%}
 .ghost{border:2.5px dashed #3e62a8;background:repeating-linear-gradient(0deg,transparent 0 11px,#3e62a825 12px 13px);opacity:0}
 .ghost:before{content:'';position:absolute;left:-9%;right:-9%;bottom:100%;height:22%;clip-path:polygon(50% 0,100% 100%,0 100%);background:#3e62a855}
-.ghost span{position:absolute;top:.3rem;left:.35rem;font:700 .8rem ui-monospace,monospace;color:#3e62a8}
+.ghost span{position:absolute;top:.3rem;left:.35rem;font:700 .8rem ui-monospace,monospace;color:#2c4a86}
 .slot.is-desired .ghost{opacity:1}
 .slot.is-missing .ghost{border-color:var(--alert);background:repeating-linear-gradient(0deg,transparent 0 11px,#d24a2a30 12px 13px);animation:missing 1.1s ease-in-out infinite alternate}.slot.is-missing .ghost span{color:var(--alert)}
 .slot.is-missing .ghost:before{background:#d24a2a66}
@@ -79,12 +82,12 @@
 .story[data-phase=repair] .terminal{opacity:.55;border-color:#5b6a72}.story[data-phase=repair] .terminal code{text-decoration:line-through}.story[data-phase=repair] .terminal small:after{content:' · annulée par la boucle'}
 .packet{position:absolute;z-index:6;left:0;top:0;margin:-8px 0 0 -8px;width:16px;height:16px;border-radius:50%;background:#fff3c4;box-shadow:0 0 0 4px #e8821e99,0 0 24px 8px #e8821e;opacity:0;pointer-events:none}
 .sync-chip{position:absolute;z-index:5;right:4%;bottom:8px;font-size:.66rem;letter-spacing:.14em;font-weight:700;padding:.3rem .6rem;background:#2f7a4a;color:#fff}
-.story[data-aligned=no] .sync-chip{background:var(--alert)}
+.story[data-aligned=no] .sync-chip{background:#a8321a}
 .story.is-paused *{animation-play-state:paused!important}
 .story-detail{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:3rem;padding:1.5rem 0}.story-counts{display:grid;grid-template-columns:1fr 1fr;gap:1rem 1.5rem;align-content:start}.story-counts p{margin:0;font-size:.7rem;letter-spacing:.1em;color:#c4d6d1}.story-counts strong{display:block;font:2rem 'DM Serif Display',Georgia,serif;color:#fff3db}
 .story[data-aligned=no] #sync,.story[data-aligned=no] #actual{color:#ff9f86}
 .story-narration #status{min-height:5.5em;margin:.3rem 0}.status-text{font-size:1.15rem;font-weight:700;margin:0 0 .5rem}.benefit{margin:0;color:#ffd8b4;font-size:.95rem}.benefit b{color:#ffb880;font-weight:700}
 .story .workflow-note{color:#d4dfd9}.story .lab-actions button{background:#f5e6ca;color:#17343c;border:1px solid #f5e6ca}.story .lab-actions button+button{background:transparent;color:#fff}.story button:disabled{opacity:.5}.story button:focus-visible{outline-color:#ffb880}
 @media(max-width:900px){.story-stage{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto auto}.zone-cluster{grid-column:1/-1}.terrace{min-height:200px}.acts button{font-size:0!important}.story .acts button span{font-size:.75rem}}
-@media(max-width:700px){.story-header{display:block}.story-stage{grid-template-columns:minmax(0,1fr);padding:1rem .8rem 2.6rem}.zone-cluster{grid-column:auto}.loop{min-height:150px}.ring{width:150px;height:150px}.loop{min-height:180px}.verdict{width:110px}.ledger{flex-direction:column-reverse}.pr{top:1.9rem}.acts{gap:.25rem}.story .acts button{padding:.4rem .2rem .55rem;text-align:center}.story-detail{grid-template-columns:minmax(0,1fr);gap:1rem}.story-counts{grid-template-columns:1fr 1fr}.story-counts strong{font-size:1.6rem}.story-narration #status{min-height:0}.story .lab-actions{display:grid;grid-template-columns:1fr}.story .lab-actions button{width:100%}.terminal code{white-space:normal}}
+@media(max-width:700px){.story-header{display:block}.story-stage{grid-template-columns:minmax(0,1fr);padding:1rem .8rem 2.6rem}.zone-cluster{grid-column:auto}.loop{min-height:150px}.ring{width:150px;height:150px}.loop{min-height:180px}.verdict{width:110px;height:110px}.ledger{flex-direction:column-reverse}.pr{top:1.9rem}.acts{gap:.25rem}.story .acts button{padding:.4rem .2rem .55rem;text-align:center}.story-detail{grid-template-columns:minmax(0,1fr);gap:1rem}.story-counts{grid-template-columns:1fr 1fr}.story-counts strong{font-size:1.6rem}.story-narration #status{min-height:0}.story .lab-actions{display:grid;grid-template-columns:1fr}.story .lab-actions button{width:100%}.terminal code{white-space:normal}}
 @media(prefers-reduced-motion:reduce){.story *{transition:none!important;animation:none!important}}

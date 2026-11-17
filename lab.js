@@ -13,7 +13,7 @@ const REVISIONS = ['r1', 'r2', 'r3'];
 const EASE = [0.22, 1, 0.36, 1];
 
 const phases = [
-  {id:'idle', chapter:'AVANT LE CHANGEMENT', text:'Le plan et le Deployment sont alignés à 3 réplicas.', benefit:'L’état voulu est écrit, relu et daté : chacun peut savoir ce qui doit tourner.', desired:3, actual:3, revision:'r1'},
+  {id:'idle', chapter:'AVANT LE CHANGEMENT', text:'Le plan et le Deployment sont alignés à 3 réplicas.', benefit:'L’état voulu est écrit, relu et daté : n’importe qui peut savoir ce qui doit tourner.', desired:3, actual:3, revision:'r1'},
   {id:'change', chapter:'01 / CHANGEMENT VERSIONNÉ', text:'Une proposition prépare 4 réplicas. Git et le cluster sont encore à 3.', benefit:'Le changement est une proposition lisible, pas une commande lancée depuis un poste.', desired:3, proposal:4, actual:3, revision:'r1'},
   {id:'validation', chapter:'02 / VALIDATION', text:'La proposition est vérifiée et acceptée dans Git. Les contrôles précis dépendent du projet.', benefit:'Chaque modification de l’infrastructure garde un auteur, une revue et des contrôles.', desired:4, actual:3, revision:'r2'},
   {id:'converge', chapter:'03 / CONVERGENCE', text:'Le contrôleur lit la révision validée et met le Deployment à 4.', benefit:'Personne n’a besoin d’un accès direct au cluster : l’agent applique la révision acceptée.', desired:4, actual:4, revision:'r2'},
@@ -75,7 +75,6 @@ function choreograph(previous, p) {
     run($('.pr'), {transform:['translateY(-24px) rotate(-2deg)', 'translateY(0px) rotate(0deg)'], opacity:[0, 1]}, {duration:.7});
     run('.diff', {clipPath:['inset(0 100% 0 0)', 'inset(0 0% 0 0)']}, {duration:.7, delay:.6, ease:'linear'});
     run('.checks li', {opacity:[0, 1], transform:['translateX(-8px)', 'translateX(0px)']}, {duration:.4, delay:1.3});
-    range(previous.desired, p.proposal).forEach(slot => run(slot.querySelector('.ghost'), {clipPath:['inset(100% 0 0 0)', 'inset(0% 0 0 0)'], opacity:[0, 1]}, {duration:.8, delay:1.8}));
   }
   if (p.id === 'validation') {
     scene.querySelectorAll('.checks i').forEach((check, i) => run(check, {transform:['scale(0)', 'scale(1.6)', 'scale(1)']}, {duration:.45, delay:.2 + i * .45}));
@@ -105,9 +104,12 @@ function choreograph(previous, p) {
   const towerDelay = ['converge', 'repair', 'done'].includes(p.id) ? 1.7 : p.id === 'drift' ? 1.3 : .2;
   range(previous.actual, p.actual).forEach((slot, i) => run(slot.querySelector('.tower'), {transform:['translateY(14px) scaleY(0)', 'translateY(0px) scaleY(1.06)', 'translateY(0px) scaleY(1)'], opacity:[0, 1, 1]}, {duration:.75, delay:towerDelay + i * .25}));
   range(p.actual, previous.actual).forEach((slot, i) => run(slot.querySelector('.tower'), {transform:['translateY(0px) rotate(0deg) scaleY(1)', 'translateY(-6px) rotate(4deg) scaleY(1)', 'translateY(14px) rotate(4deg) scaleY(0)'], opacity:[1, 1, 0]}, {duration:.8, delay:towerDelay + i * .2, ease:'easeIn'}));
-  const ghostDelay = p.id === 'validation' ? 3.1 : p.id === 'rollback' ? 1.6 : .2;
-  range(previous.proposal ?? previous.desired, p.desired).forEach(slot => run(slot.querySelector('.ghost'), {clipPath:['inset(100% 0 0 0)', 'inset(0% 0 0 0)'], opacity:[0, 1]}, {duration:.8, delay:ghostDelay}));
-  range(p.desired, previous.desired).forEach(slot => run(slot.querySelector('.ghost'), {clipPath:['inset(0 0 0% 0)', 'inset(0 0 100% 0)'], opacity:[1, 0]}, {duration:.8, delay:ghostDelay}));
+  // Outlines are visible up to the Git value, or up to the proposal while it is in review.
+  // Any jump between acts only animates the slots whose visibility actually changes.
+  const outlined = phase => Math.max(phase.desired, phase.proposal ?? 0);
+  const ghostDelay = p.id === 'change' ? 1.8 : p.id === 'validation' ? 3.1 : p.id === 'rollback' ? 1.6 : .2;
+  range(outlined(previous), outlined(p)).forEach(slot => run(slot.querySelector('.ghost'), {clipPath:['inset(100% 0 0 0)', 'inset(0% 0 0 0)'], opacity:[0, 1]}, {duration:.8, delay:ghostDelay}));
+  range(outlined(p), outlined(previous)).forEach(slot => run(slot.querySelector('.ghost'), {clipPath:['inset(0 0 0% 0)', 'inset(0 0 100% 0)'], opacity:[1, 0]}, {duration:.8, delay:ghostDelay}));
 }
 
 function render(p) {
@@ -158,7 +160,11 @@ function show(index) {
   scene.classList.toggle('is-paused', paused);
   const p = phases[index];
   render(p);
+  // Keep keyboard focus on a usable control when the focused button becomes disabled.
+  const focused = document.activeElement;
   play.disabled = index > 0 && index < last;
+  if (focused === play && play.disabled) pause.focus();
+  if (focused === pause && pause.disabled) (index === last ? play : reset).focus();
   play.firstChild.textContent = index === last ? 'Rejouer le scénario ' : 'Jouer le scénario ';
   if (!reduced.matches && index > 0) {
     choreograph(previous, p);

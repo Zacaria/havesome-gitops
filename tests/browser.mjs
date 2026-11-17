@@ -54,6 +54,10 @@ try {
     await page.locator('[data-act="4"]').focus(); await page.keyboard.press('Enter');
     assert.equal(await scene.getAttribute('data-phase'), 'drift', 'acts are reachable by keyboard');
     assert.equal(await page.locator('[data-act="4"]').getAttribute('aria-current'), 'step');
+    await page.locator('[data-act="1"]').click(); await page.waitForTimeout(3000);
+    assert.equal(await page.locator('.slot-4 .ghost').evaluate(e=>getComputedStyle(e).opacity), '1', 'jumping back to the proposal keeps its outline visible');
+    await page.locator('[data-act="7"]').click(); await page.locator('[data-act="5"]').click(); await page.waitForTimeout(1500);
+    assert.equal(await page.locator('.slot-4 .ghost').evaluate(e=>getComputedStyle(e).opacity), '1', 'jumping from r3 to the repair act shows the fourth requested outline');
     await page.locator('#reset').click();
     await page.waitForTimeout(1800); assert.equal(await scene.getAttribute('data-phase'),'idle');
     assert.deepEqual(errors, [], 'no JavaScript errors');
