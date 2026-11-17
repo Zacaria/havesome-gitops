@@ -1,9 +1,11 @@
 import { build } from 'esbuild';
-import { cp, mkdir } from 'node:fs/promises';
+import { cp, mkdir, rm } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 
+await rm('dist', { recursive: true, force: true });
 await mkdir('dist', { recursive: true });
-for (const file of ['index.html', 'style.css', 'progress.css', 'lab.js', 'progress.js', 'assets']) {
+await build({ entryPoints: ['lab.js'], bundle: true, minify: true, outfile: 'dist/lab.js', target: ['es2020'] });
+for (const file of ['index.html', 'style.css', 'progress.css', 'progress.js', 'assets']) {
   await cp(file, `dist/${file}`, { recursive: true });
 }
 await cp('src/ui/LICENSE.shadcn', 'dist/LICENSE.shadcn.txt');
