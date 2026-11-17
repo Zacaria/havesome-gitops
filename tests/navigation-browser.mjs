@@ -36,7 +36,13 @@ try {
     const blocks = page.locator('[data-slot="code-block"]');
     assert.equal(await blocks.count(), 2, 'both static examples use the official CodeBlock');
     assert.equal(await blocks.first().locator('[data-slot="code-block-content"]').getAttribute('tabindex'), '0');
-    assert.equal(await blocks.nth(1).locator('[data-slot="code-block-content"] span').count() > 0, true, 'YAML coloring remains');
+    const colors = await blocks.nth(1).locator('[data-slot="code-block-code"]').evaluate(code => {
+      const token = [...code.querySelectorAll('span')].find(el => el.textContent === 'apiVersion:');
+      return { key: getComputedStyle(token).color, value: getComputedStyle(token.nextSibling.parentElement).color };
+    });
+    assert.equal(colors.key, 'rgb(255, 177, 138)', 'YAML keys retain their accent');
+    assert.equal(colors.value, 'rgb(229, 239, 234)', 'YAML values retain their ordinary text color');
+    assert.notEqual(colors.key, colors.value, 'YAML keys and values have distinct computed colors');
     const inline = await blocks.nth(1).locator('[data-slot="code-block-code"]').evaluate(code => {
       const token = [...code.querySelectorAll('span')].find(el => el.textContent === 'apiVersion:');
       const next = token.nextSibling;
@@ -76,6 +82,14 @@ try {
       }
     }
     await page.close();
+    const fallback = await browser.newPage({ viewport, javaScriptEnabled: false });
+    await fallback.goto(`http://127.0.0.1:${port}/`);
+    const fallbackColors = await fallback.locator('.codepair .code code').nth(1).evaluate(code => {
+      const token = [...code.querySelectorAll('span')].find(el => el.textContent === 'apiVersion:');
+      return { key: getComputedStyle(token).color, value: getComputedStyle(token.nextSibling.parentElement).color };
+    });
+    assert.deepEqual(fallbackColors, { key: 'rgb(255, 177, 138)', value: 'rgb(229, 239, 234)' }, 'no-JS YAML colors remain readable');
+    await fallback.close();
     for (const id of ['modele', 'boucle', 'labo', 'depot', 'livrer', 'securite', 'outils', 'exploiter']) {
       const anchored = await browser.newPage({ viewport, reducedMotion: 'reduce' });
       await anchored.goto(`http://127.0.0.1:${port}/#${id}`);
