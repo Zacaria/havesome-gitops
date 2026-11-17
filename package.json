@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "build": "vp build",
-    "test:browser": "node tests/browser.mjs",
+    "test:browser": "node tests/navigation-browser.mjs && node tests/browser.mjs",
     "dev": "vp dev",
     "check": "vp check --no-fmt src/code-blocks.tsx vite.config.ts"
   },
@@ -12,6 +12,7 @@
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "lucide-react": "0.468.0",
+    "motion": "14.14.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "tailwind-merge": "3.3.1"

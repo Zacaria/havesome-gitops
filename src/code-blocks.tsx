@@ -1,19 +1,18 @@
 import React from 'react';
+import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import './code-blocks.css';
 import { Button } from './ui/button';
 
+// Replace only the controls; the story and its state remain owned by lab.js.
 const actions = document.querySelector<HTMLElement>('.lab-actions');
 if (actions) {
-  const render = (value: number, message: string) => {
-    document.getElementById('actual')!.textContent = String(value);
-    document.getElementById('status')!.textContent = message;
-  };
-  createRoot(actions).render(<>
-    <Button id="drift" type="button" onClick={() => render(2, 'Dérive · 2 observés, 3 souhaités.')}>Simuler une dérive</Button>
-    <Button id="reconcile" type="button" onClick={() => render(3, 'Réconcilié · le modèle rejoint l’intention.')}>Réconcilier</Button>
-    <Button id="reset" type="button" onClick={() => render(3, 'Aligné · l’état observé correspond à l’intention.')}>Recommencer</Button>
-  </>);
+  flushSync(() => createRoot(actions).render(<>
+    <Button id="play" type="button">Jouer le scénario <span aria-hidden="true">▶</span></Button>
+    <Button id="pause" type="button" disabled>Mettre en pause</Button>
+    <Button id="reset" type="button">Recommencer</Button>
+  </>));
+  await import('../lab.js');
 }
 
 import {

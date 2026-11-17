@@ -1,4 +1,4 @@
 /* Progression du parcours : une seule rangée reste utilisable au clavier et au toucher. */
 .chapters{position:sticky;top:0;z-index:5;flex-wrap:nowrap;overflow-x:auto;background:var(--paper);white-space:nowrap;overscroll-behavior-inline:contain}
 .chapters a[aria-current="location"]{color:var(--orange);font-weight:700;text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:6px}
-.section{scroll-margin-top:calc(var(--chapters-height, 4rem) + 1rem)}
+.section{scroll-margin-top:calc(var(--chapters-height, 4rem) + .5rem)}

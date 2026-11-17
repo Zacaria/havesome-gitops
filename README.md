@@ -6,23 +6,19 @@ Direction : carnet d'exploitation clair, encre bleu nuit, repères orange et sch
 
 ## Vérification locale
 
-Avec Node 24.11 ou supérieur et npm : `npm ci`, `npm run build`, `python3 -m unittest discover -s tests -v`, puis `npm run test:browser` (définir `CHROMIUM` sur le chemin de Brave pour le contrôle demandé). La toolchain Vite+ est locale au projet : `npm run dev` pour développer et `npm run check` pour les contrôles ciblés. Servir `dist/` avec `python3 -m http.server --directory dist 8000`. Les exemples sont pédagogiques et ne sont pas destinés à être appliqués à un cluster de production.
+Avec Node 24.11 ou supérieur et npm : `npm ci`, `npm run build`, `npm run check`, `python3 -m unittest discover -s tests -v`, puis `CHROMIUM=/usr/bin/brave-browser npm run test:browser`. Vite+ est installé localement : `npm run dev` lance le serveur de développement. Pour inspecter le build, lancer `python3 -m http.server --directory dist 8000` et ouvrir `http://localhost:8000/`. Les exemples sont pédagogiques et ne sont pas destinés à être appliqués à un cluster de production.
 
 ## Contribuer
 
-Le guide et la fiche sont dans `index.html` et `fiche.html` ; les styles sont à leur racine et les composants shadcn sous `src/ui/`. Modifier le contenu ou le comportement, puis lancer les vérifications ci-dessus. Le build Vite+ reconstruit `dist/` et génère des noms d’assets avec empreinte ; ne pas modifier ces fichiers générés.
-
-## État de cette branche
-
-Cette branche préserve la correction de navigation et des blocs de code en revue ; elle n’est pas publiée. `main` correspond à la version actuellement servie. Un push sur ce dépôt ne déploie pas le site.
+Le guide et la fiche se trouvent dans `index.html` et `fiche.html` ; leurs styles sont à la racine, les composants shadcn dans `src/ui/` et le laboratoire Motion dans `lab.js`. Après modification, lancer les vérifications ci-dessus. Le build Vite+ reconstruit `dist/` et produit des noms d'assets avec empreinte : ne pas modifier ces fichiers générés.
 
 ## Publication
 
-Le projet Vercel `havesome-gitops` est séparé des autres sites. La version actuellement publiée est celle de `main` et a été déployée manuellement. Construire `dist/` depuis un arbre propre et vérifier le candidat avant publication. Aucun déploiement automatique Git n'est configuré ; la publication exige une revue et la coordination avec les autres candidats en cours.
+Le projet Vercel `havesome-gitops` est séparé des autres sites. La publication actuelle est manuelle : déployer uniquement le contenu construit de `dist/` depuis un répertoire isolé lié à ce projet, puis comparer les fichiers publics au commit. Ce dépôt n'est pas relié à un déploiement automatique : un push ne met pas le site à jour. Vérifier la version effectivement servie avant chaque publication pour préserver les changements concurrents.
 
 ## Fiche mémo
 
-La page `fiche.html` résume la boucle GitOps et propose des commandes de consultation sélectionnables. Elles supposent les CLI installées, des droits de lecture et, pour les commandes de cluster, le bon contexte ; les noms et espaces de noms sont des exemples à adapter. La fiche ne remplace pas la documentation officielle. Son illustration est une métaphore, pas un schéma technique normatif ; elle a été produite par l'outil natif Codex `image_gen.imagegen` (1752 × 897 px).
+La page `fiche.html` présente les principes et des commandes de consultation sélectionnables. Elles demandent les CLI, des droits de lecture et le bon contexte ; adaptez les noms d'exemple. L'illustration est une métaphore produite avec l'outil natif Codex `image_gen.imagegen`, et non un schéma technique normatif.
 
 ## Navigation et exemples
 
@@ -32,7 +28,9 @@ Les exemples statiques utilisent le composant officiel shadcn/ui Code Block, ada
 
 ## Modèle du laboratoire
 
-La dérive simulée porte sur `spec.replicas` du Deployment dans le cluster, et non sur le nombre de pods prêts. Le contrôleur GitOps peut rétablir la configuration selon ses réglages ; Kubernetes essaie ensuite de créer les pods, sans garantie de disponibilité.
+Le laboratoire raconte une séquence locale : changement de 3 à 4 réplicas dans une nouvelle révision, validation simulée, convergence, dérive manuelle, correction automatique puis retour à la révision connue à 3. La validation et l'auto-réconciliation dépendent de la configuration réelle ; le retour arrière crée ici une nouvelle révision plutôt que de réécrire l'historique. La scène place côte à côte les trois acteurs : le registre Git (PR, contrôles, commits r1 à r3), la boucle du contrôleur qui compare les deux valeurs, et le cluster où les tours en pierre représentent la valeur déclarée et les contours en pointillés la valeur demandée par Git. Chaque acte, accessible directement depuis la frise, ajoute une phrase « Pourquoi c'est utile ». Motion anime la scène (diff, contrôles, tampon de fusion, paquets de révision, balayage de réconciliation, tours qui se construisent ou tombent) ; la pause fige les animations et leur reprise continue le mouvement. Recommencer restaure la scène initiale, et activer la réduction des animations interrompt les mouvements en cours sans laisser de styles intermédiaires. La simulation porte sur `spec.replicas` du Deployment, pas sur les pods prêts. Kubernetes essaie ensuite de créer les pods, sans garantie de disponibilité.
+
+Le concept original conservé dans `docs/gitops-cinematic-concept.png` a été généré avec l'outil natif Codex `image_gen.imagegen` et inspecté avant l'implémentation. Son langage de plans lumineux superposés à une architecture bâtie inspire la scène ; ce n'est pas une capture de l'interface.
 
 ## Sources
 
